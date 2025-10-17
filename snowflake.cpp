@@ -1,53 +1,74 @@
 #include <iostream>
-#include <conio.h>   // for _kbhit() and _getch()
-#include <windows.h> // for Sleep()
-#include <cstdlib>   // for rand()
+#include <conio.h>    // for _kbhit() and _getch()
+#include <windows.h>  // for Sleep()
+#include <cstdlib>    // for rand()
 
 using namespace std;
 
 int main() {
-    const int width = 20;
-    int snowX = rand() % width;  // Snowflake position
+    int width, height, basketSize, speed;
+    cout << "Enter play area width (10-40): ";
+    cin >> width;
+    cout << "Enter play area height (5-20): ";
+    cin >> height;
+    cout << "Enter basket size (2-5): ";
+    cin >> basketSize;
+    cout << "Enter speed in ms (50-500): ";
+    cin >> speed;
+
+    // Clamp speed to a reasonable minimum
+    if (speed < 100) speed = 100;
+
+    int snowX = rand() % width;
     int snowY = 0;
-    int basketX = width / 2;     // Basket starts in middle
+    int basketX = width / 2;
     int score = 0;
+    int misses = 0;
+    const int maxMisses = 3;
 
     while (true) {
-        system("cls"); // clear screen
+        // Process basket movement BEFORE drawing, for more responsive controls
+        for (int i = 0; i < 5; ++i) { // Check input several times per frame
+            if (_kbhit()) {
+                char key = _getch();
+                if (key == 'a' && basketX > 0) basketX--;
+                if (key == 'd' && basketX < width - basketSize) basketX++;
+            }
+            Sleep(speed / 5); // Spread out input checks for smoother control
+        }
+
+        system("cls");
 
         // Draw play area
-        for (int y = 0; y < 10; y++) {
+        for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 if (x == snowX && y == snowY)
-                    cout << "❄"; // snowflake
-                else if (y == 9 && x >= basketX && x < basketX + 3)
-                    cout << "="; // basket
+                    cout << "❄";
+                else if (y == height - 1 && x >= basketX && x < basketX + basketSize)
+                    cout << "=";
                 else
                     cout << " ";
             }
             cout << endl;
         }
 
-        cout << "Score: " << score << endl;
+        cout << "Score: " << score << "  Misses: " << misses << "/" << maxMisses << endl;
 
         // Move snowflake
         snowY++;
-        if (snowY > 9) {
-            // Check if caught
-            if (snowX >= basketX && snowX < basketX + 3)
+        if (snowY > height - 1) {
+            if (snowX >= basketX && snowX < basketX + basketSize)
                 score++;
+            else
+                misses++;
             // Reset snowflake
             snowX = rand() % width;
             snowY = 0;
         }
 
-        // Move basket
-        if (_kbhit()) {
-            char key = _getch();
-            if (key == 'a' && basketX > 0) basketX--;
-            if (key == 'd' && basketX < width - 3) basketX++;
+        if (misses >= maxMisses) {
+            cout << "Game Over! Final Score: " << score << endl;
+            break;
         }
-
-        Sleep(150); // control speed
     }
 }
